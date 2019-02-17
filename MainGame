@@ -1,0 +1,224 @@
+program HW2Appel;
+
+type
+ arrowType = array[1..20] of Boolean;
+ oneCircle = record
+       numOfChecks: Integer;  //to keep track of the number of checks
+       totalArrows: arrowType;  //keeps track of total arrows
+
+ end;
+ circleArray = array[1..20] of oneCircle;
+
+var
+  //Declaration of variables.
+  circles: circleArray;      //to call the array
+  {keep track of what is the current circle, how many circles, and how many arrows}
+  currentCircle, numOfCircles, numOfArrows: Integer;
+  //Are all the circles checked?
+  done, systemStronglyConnected, thisCircleStronglyConnected: Boolean;
+  //Files
+  inputFile: text;
+  outputFile: text;
+  //Finding the certain circle, front part of arrow, total checks, and max checks
+  circleNum, arrowNum, totalChecks, minTotalChecks : Integer;
+  totalChecksOneGame, maxTotalChecks, minOneCircle, maxOneCircle : Integer;
+  //For the average of checks
+  avgTotalChecks, avgCircleChecks: Double;
+  //FOR loop variables
+  i, j, k: Integer;
+
+  //Procedure declaration
+  {this is a recursive procedure. If the current circle does't have any checks,
+  then it will add a check, and set visitAllCircles to true. If the first circle
+  didn't have any checks, then we set visitAllCircles to false. If visitAllCircles
+  is true, then the circle is strongly connected. If they're not strongly connected,
+  it will call itself and run again. This will continue until it is either strongly
+  connected, or it finds all the issues.}
+procedure visitACircle(currentCircle : Integer;
+                       var circles : circleArray;
+                       var thisCircleStronglyConnected : Boolean);
+var
+  visitedAllCircles : Boolean;
+  i: Integer;
+
+begin
+
+     if(circles[currentCircle].numOfChecks = 0) then
+     begin
+
+          circles[currentCircle].numOfChecks := 1;
+          visitedAllCircles := true;
+
+          for i := 1 to numOfCircles do
+              if(circles[i].numOfChecks = 0) then
+                  visitedAllCircles := false;
+          if(visitedAllCircles = true) then
+              thisCircleStronglyConnected := true
+          else
+              for i := 1 to numOfCircles do
+                  if(circles[currentCircle].totalArrows[i] = true) then
+                     visitACircle(i, circles, thisCircleStronglyConnected);
+     end;
+end;
+begin
+    //My files I'm reading from and outputting to
+    Assign(inputFile, 'HW2infile.txt');
+    Assign(outputFile, 'HW2AppelOutfile.txt');
+    reset(inputFile);
+    rewrite(outputFile);
+
+    //Setting up the game
+   //Read in the first two lines
+   read(inputFile, numOfCircles);
+   read(inputFile, numOfArrows);
+
+    //Loop to initialize the number of checks to 0
+    for i:= 1 to numOfCircles do
+    begin
+        circles[i].numOfChecks := 0;
+        //Loop to initialize the total number of arrows
+         for j:= 1 to numOfCircles do
+             circles[i].totalArrows[j] := false;
+    end;
+
+    //Read in circle num, total arrow num, and the back and front
+    //of the arrows.
+    while not EOF(inputFile) do
+    begin
+         readln(inputFile, circleNum, arrowNum);
+         circles[circleNum].totalArrows[arrowNum] := true;
+
+    end;
+    //Checking if it's strongly connected
+    systemStronglyConnected := true;
+    for i := 1 to numOfCircles do
+    begin
+         //Set is it strongly connected to false
+         thisCircleStronglyConnected := false;
+         //Recursive call
+         visitACircle(i, circles, thisCircleStronglyConnected);
+         {If the circle is not strongly connected, it will print out which circles
+         you can't get to from the original circle}
+         if(thisCircleStronglyConnected = false) then
+         begin
+              systemStronglyConnected := false;
+              writeln(outputFile, 'Not strongly connected... ');
+              write(outputFile, ' from circle ', i, ', you cannot get to');
+              writeln('Not strongly connected... ');
+              write('from circle ', i, ' ,you cannot get to');
+              //Print which ones they are not strongly connected to by checking
+              //if it got a checkmark or not.
+              for j := 1 to numOfCircles do
+                  if(circles[j].numOfChecks = 0) then
+                  begin
+                       write(outputFile, ' circle ', j);
+                       write(' circle ', j);
+                  end;
+              writeln(outputFile);
+              writeln;
+         end;
+         //Reset it every run.
+         for j := 1 to numOfCircles do
+             circles[j].numOfChecks := 0;
+
+    end;
+    //If the circles are strongly connected, then we can run the game.
+    //We run it ten times automatically
+    if (systemStronglyConnected = true) then
+    begin
+       writeln('Diagraph is strongly connected.');
+       //Set the variables to certain numbers.
+       maxTotalChecks := 0;
+       minTotalChecks := 1000000;
+       maxOneCircle := 0;
+       minOneCircle := 1000000;
+       totalChecks := 0;
+    //Playing the game 10 times
+     for k := 1 to 10 do
+     begin
+
+           //Initialize done to false
+           done := false;
+           //Set currentCircle to 1
+           currentCircle := 1;
+           //Add a check to the current circle.
+           circles[currentCircle].numOfChecks:= circles[currentCircle].numOfChecks + 1;
+           //Needed for random
+           Randomize;
+           //While all the circles HAVEN'T been checked
+           while not done do
+           begin
+                //Random to pick which direction the arrow goes.
+                arrowNum := Random(numOfCircles)+1;
+
+                {Start at circle one, go to next, does it have more than one
+                arrow? yes, randomize to pick the next arrow}
+                while circles[currentCircle].totalArrows[arrowNum] = false do
+                      arrowNum := Random(numOfCircles)+1;
+
+                //Current circle is now the front end of the arrow
+                currentCircle := arrowNum;
+                //Add a check mark to the new current circle
+                circles[currentCircle].numOfChecks:= circles[currentCircle].numOfChecks + 1;
+                //Check if all the circles are checked.
+                done := true;
+                //If not, do it again.
+                for i:= 1 to numOfCircles do
+                if circles[i].numOfChecks = 0 then
+                   done := false;
+           end;
+
+           totalChecksOneGame := 0;
+
+           for i:= 1 to numOfCircles do
+           begin
+                //Get the max and min amount of checks per circle
+                if circles[i].numOfChecks > maxOneCircle then
+                   maxOneCircle := circles[i].numOfChecks;
+                if circles[i].numOfChecks < minOneCircle then
+                   minOneCircle := circles[i].numOfChecks;
+
+                //Add the checks from the circles together to get total checks
+                totalChecksOneGame := circles[i].numOfChecks + totalChecksOneGame;
+                //Divide number of circles from total checks to get an average
+
+           end;
+           //To find the total amount of checks in the game.
+           totalChecks := totalChecks + totalChecksOneGame;
+
+           //Get the max and min amount of checks out of all the games.
+           if totalChecksOneGame > maxTotalChecks then
+              maxTotalChecks := totalChecksOneGame;
+           if totalChecksOneGame < minTotalChecks then
+              minTotalChecks := totalChecksOneGame;
+     end;
+     //To find the avg total checks and average checks per circle.
+     avgTotalChecks := (totalChecks) / 10;
+     avgCircleChecks := (totalChecks) / (10 * numOfCircles);
+     //Print out to the output file.
+     Writeln(outputFile, 'Average total checks per game:  ', avgTotalChecks, ' checkmarks');
+     Writeln(outputFile, 'Max total checks per games: ', maxTotalChecks, ' checksmarks');
+     Writeln(outputFile, 'Min total checks per games: ',  minTotalChecks, ' checksmarks');
+     Writeln(outputFile, 'Average checks one circle per game: ', avgCircleChecks, ' checksmarks');
+     Writeln(outputFile, 'Max checks in One Circle: ', maxOneCircle, ' checkmarks');
+     Writeln(outputFile, 'Min checks in One Circle: ', minOneCircle, ' checkmarks');
+     //Print out to the screen.
+     //I don't think it will stop running unless you hit stop.
+     Writeln('Total Checks from all the Circles: ', totalChecks, ' checkmarks');
+     Writeln('Average total checks per game:  ', avgTotalChecks, ' checkmarks');
+     Writeln('Max total checks per games: ', maxTotalChecks, ' checksmarks');
+     Writeln('Min total checks per games: ',  minTotalChecks, ' checksmarks');
+     Writeln('Average checks one circle per game: ', avgCircleChecks, ' checksmarks');
+     Writeln('Max checks in One Circle: ', maxOneCircle, ' checkmarks');
+     Writeln('Min checks in One Circle: ', minOneCircle, ' checkmarks');
+     writeln;
+
+end;
+
+    //Don't forget to close your files
+    close(inputFile);
+    close(outputFile);
+    readln;
+end.
+
+                                    
