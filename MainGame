@@ -87,12 +87,15 @@ begin
     begin
          readln(inputFile, circleNum, arrowNum);
          circles[circleNum].totalArrows[arrowNum] := true;
+         arrowNum := arrowNum + 1;
 
     end;
-    //Checking if it's strongly connected
-    systemStronglyConnected := true;
-    for i := 1 to numOfCircles do
+    if arrowNum = numOfArrows then
     begin
+      //Checking if it's strongly connected
+      systemStronglyConnected := true;
+      for i := 1 to numOfCircles do
+      begin
          //Set is it strongly connected to false
          thisCircleStronglyConnected := false;
          //Recursive call
@@ -202,6 +205,10 @@ begin
      Writeln(outputFile, 'Average checks one circle per game: ', avgCircleChecks, ' checksmarks');
      Writeln(outputFile, 'Max checks in One Circle: ', maxOneCircle, ' checkmarks');
      Writeln(outputFile, 'Min checks in One Circle: ', minOneCircle, ' checkmarks');
+   
+     //Don't forget to close your files.
+     close(inputFile);
+     close(outputFile);
      //Print out to the screen.
      //I don't think it will stop running unless you hit stop.
      Writeln('Total Checks from all the Circles: ', totalChecks, ' checkmarks');
@@ -214,11 +221,16 @@ begin
      writeln;
 
 end;
+end
+else
+begin
+   writeln(outputFile, 'Your file did not have enough back to front arrow pairs.');
+   close(outputFile);
+   
+   writeln('Your file did not have enough back to front arrow pairs.');
+   readln;
+end;
 
-    //Don't forget to close your files
-    close(inputFile);
-    close(outputFile);
-    readln;
 end.
 
                                     
